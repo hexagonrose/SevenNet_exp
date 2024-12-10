@@ -1,3 +1,4 @@
+import time
 import warnings
 from collections import OrderedDict
 from typing import Dict, Optional
@@ -8,8 +9,6 @@ from e3nn.util.jit import compile_mode
 
 import sevenn._keys as KEY
 from sevenn._const import AtomGraphDataType
-
-import time
 
 
 @compile_mode('script')
