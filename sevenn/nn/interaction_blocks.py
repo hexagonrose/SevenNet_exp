@@ -23,10 +23,11 @@ def NequIP_interaction_block(
     act_radial: Callable,
     bias_in_linear: bool,
     num_species: int,
-    t: int,   # interaction layer index
+    t: int,  # interaction layer index
     data_key_x: str = KEY.NODE_FEATURE,
     data_key_weight_input: str = KEY.EDGE_EMBEDDING,
     parallel: bool = False,
+    multi_cutoff_list: List[int] = None,
     **conv_kwargs,
 ):
     block = {}
@@ -43,21 +44,32 @@ def NequIP_interaction_block(
     )
 
     block[f'{t}_self_interaction_1'] = IrrepsLinear(
-        irreps_x, irreps_x,
+        irreps_x,
+        irreps_x,
         data_key_in=data_key_x,
         biases=bias_in_linear,
     )
 
     # convolution part, l>lmax is dropped as defined in irreps_out
+    if multi_cutoff_list is None:
+        data_key_filter = KEY.EDGE_ATTR
+        data_key_edge_idx = KEY.EDGE_IDX
+    else:
+        data_key_weight_input = f'{data_key_weight_input}{multi_cutoff_list[t]}'
+        data_key_filter = f'{KEY.EDGE_ATTR}{multi_cutoff_list[t]}'
+        data_key_edge_idx = f'{KEY.EDGE_IDX}{multi_cutoff_list[t]}'
+
     block[f'{t}_convolution'] = IrrepsConvolution(
         irreps_x=irreps_x,
         irreps_filter=irreps_filter,
         irreps_out=irreps_out_tp,
-        data_key_weight_input=data_key_weight_input,
         weight_layer_input_to_hidden=weight_nn_layers,
         weight_layer_act=act_radial,
         denominator=conv_denominator,
         train_denominator=train_conv_denominator,
+        data_key_filter=data_key_filter,
+        data_key_weight_input=data_key_weight_input,
+        data_key_edge_idx=data_key_edge_idx,
         is_parallel=parallel,
         **conv_kwargs,
     )

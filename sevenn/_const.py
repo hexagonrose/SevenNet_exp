@@ -48,15 +48,8 @@ ACTIVATION_FOR_ODD = {'tanh': torch.tanh, 'abs': torch.abs}
 ACTIVATION_DICT = {'e': ACTIVATION_FOR_EVEN, 'o': ACTIVATION_FOR_ODD}
 
 _prefix = os.path.abspath(f'{os.path.dirname(__file__)}/pretrained_potentials')
-SEVENNET_0_11July2024 = (
-    f'{_prefix}/SevenNet_0__11July2024/checkpoint_sevennet_0.pth'
-)
-SEVENNET_0_22May2024 = (
-    f'{_prefix}/SevenNet_0__22May2024/checkpoint_sevennet_0.pth'
-)
-SEVENNET_l3i5 = (
-    f'{_prefix}/SevenNet_l3i5/checkpoint_l3i5.pth'
-)
+SEVENNET_0_11July2024 = f'{_prefix}/SevenNet_0__11July2024/checkpoint_sevennet_0.pth'
+SEVENNET_0_22May2024 = f'{_prefix}/SevenNet_0__22May2024/checkpoint_sevennet_0.pth'
 
 
 # to avoid torch script to compile torch_geometry.data
@@ -100,6 +93,7 @@ DEFAULT_E3_EQUIVARIANT_MODEL_CONFIG = {
     },
     KEY.ACTIVATION_RADIAL: 'silu',
     KEY.CUTOFF: 4.5,
+    KEY.MULTI_CUTOFF: None,
     KEY.CONVOLUTION_WEIGHT_NN_HIDDEN_NEURONS: [64, 64],
     KEY.NUM_CONVOLUTION: 3,
     KEY.ACTIVATION_SCARLAR: {'e': 'silu', 'o': 'tanh'},
@@ -136,7 +130,9 @@ MODEL_CONFIG_CONDITION = {
     },
     KEY.CUTOFF: float,
     KEY.NUM_CONVOLUTION: int,
-    KEY.CONV_DENOMINATOR: lambda x: isinstance(x, float) or x in [
+    KEY.CONV_DENOMINATOR: lambda x: isinstance(x, float)
+    or x
+    in [
         'avg_num_neigh',
         'sqrt_avg_num_neigh',
     ],
@@ -173,7 +169,7 @@ DEFAULT_DATA_CONFIG = {
     KEY.SAVE_DATASET: False,
     KEY.SAVE_BY_LABEL: False,
     KEY.SAVE_BY_TRAIN_VALID: False,
-    KEY.RATIO: 0.0,
+    KEY.RATIO: 0.1,
     KEY.BATCH_SIZE: 6,
     KEY.PREPROCESS_NUM_CORES: 1,
     KEY.COMPUTE_STATISTICS: True,

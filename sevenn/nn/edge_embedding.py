@@ -43,9 +43,9 @@ class EdgePreprocess(nn.Module):
                 data['_strain'] = strain
 
                 sym_strain = 0.5 * (strain + strain.transpose(-1, -2))
-                pos = pos + torch.bmm(
-                    pos.unsqueeze(-2), sym_strain[batch]
-                ).squeeze(-2)
+                pos = pos + torch.bmm(pos.unsqueeze(-2), sym_strain[batch]).squeeze(
+                    -2
+                )
                 cell = cell + torch.bmm(cell, sym_strain)
             else:
                 strain = torch.zeros(
@@ -91,10 +91,11 @@ class BesselBasis(nn.Module):
     ):
         super().__init__()
         self.num_basis = bessel_basis_num
+        self.cutoff_length = cutoff_length
         self.prefactor = 2.0 / cutoff_length
-        self.coeffs = torch.FloatTensor([
-            n * math.pi / cutoff_length for n in range(1, bessel_basis_num + 1)
-        ])
+        self.coeffs = torch.FloatTensor(
+            [n * math.pi / cutoff_length for n in range(1, bessel_basis_num + 1)]
+        )
         if trainable_coeff:
             self.coeffs = nn.Parameter(self.coeffs)
 
@@ -116,14 +117,14 @@ class PolynomialCutoff(nn.Module):
     ):
         super().__init__()
         p = poly_cut_p_value
-        self.cutoff_length = cutoff_length
+        self.r_cut = cutoff_length
         self.p = p
         self.coeff_p0 = (p + 1.0) * (p + 2.0) / 2.0
         self.coeff_p1 = p * (p + 2.0)
         self.coeff_p2 = p * (p + 1.0) / 2.0
 
     def forward(self, r: torch.Tensor) -> torch.Tensor:
-        r = r / self.cutoff_length
+        r = r / self.r_cut
         return (
             1
             - self.coeff_p0 * torch.pow(r, self.p)
@@ -208,10 +209,49 @@ class EdgeEmbedding(nn.Module):
         rvec = data[KEY.EDGE_VEC]
         r = torch.linalg.norm(data[KEY.EDGE_VEC], dim=-1)
         data[KEY.EDGE_LENGTH] = r
-
-        data[KEY.EDGE_EMBEDDING] = self.basis_function(
+        data[KEY.EDGE_EMBEDDING] = self.basis_function(r) * self.cutoff_function(
             r
-        ) * self.cutoff_function(r).unsqueeze(-1)
+        ).unsqueeze(-1)
         data[KEY.EDGE_ATTR] = self.spherical(rvec)
+
+        return data
+
+
+class MultiCutoffEdgeEmbedding(nn.Module):
+    """
+    embedding layer of |r| by
+    RadialBasis(|r|)*CutOff(|r|)
+    f : (N_edge) -> (N_edge, basis_num)
+    """
+
+    def __init__(
+        self,
+        basis_module: list[nn.Module],
+        cutoff_module: nn.Module,
+        spherical_module: nn.Module,
+    ):
+        super().__init__()
+        self.basis_functions = nn.ModuleList(basis_module)
+        self.cutoff_function = cutoff_module
+        self.spherical = spherical_module
+
+    def forward(self, data: AtomGraphDataType) -> AtomGraphDataType:
+        rvec = data[KEY.EDGE_VEC]
+        r = torch.linalg.norm(data[KEY.EDGE_VEC], dim=-1)
+        data[KEY.EDGE_LENGTH] = r
+
+        for basis_function in self.basis_functions:
+            cutoff = basis_function.cutoff_length
+            self.cutoff_function.r_cut = cutoff
+            if isinstance(self.cutoff_function, XPLORCutoff):
+                self.cutoff_function.r_on = cutoff - 1
+            condition = r <= cutoff
+            new_r = r[condition]
+            new_rvec = rvec[condition]
+            data[KEY.EDGE_EMBEDDING + str(cutoff)] = basis_function(
+                new_r
+            ) * self.cutoff_function(new_r).unsqueeze(-1)
+            data[KEY.EDGE_ATTR + str(cutoff)] = self.spherical(new_rvec)
+            data[KEY.EDGE_IDX + str(cutoff)] = data[KEY.EDGE_IDX][:, condition]
 
         return data

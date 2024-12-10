@@ -14,16 +14,12 @@ from .util import _broadcast
 
 
 def message_gather(
-    node_features: torch.Tensor,
-    edge_dst: torch.Tensor,
-    message: torch.Tensor
+    node_features: torch.Tensor, edge_dst: torch.Tensor, message: torch.Tensor
 ):
     index = _broadcast(edge_dst, message, 0)
     out_shape = [len(node_features)] + list(message.shape[1:])
     out = torch.zeros(
-        out_shape,
-        dtype=node_features.dtype,
-        device=node_features.device
+        out_shape, dtype=node_features.dtype, device=node_features.device
     )
     out.scatter_reduce_(0, index, message, reduce='sum')
     return out

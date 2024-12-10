@@ -152,6 +152,7 @@ CHEMICAL_SPECIES = 'chemical_species'
 CHEMICAL_SPECIES_BY_ATOMIC_NUMBER = '_chemical_species_by_atomic_number'
 NUM_SPECIES = '_number_of_species'
 TYPE_MAP = '_type_map'
+MULTI_CUTOFF = 'multi_cutoff'
 
 # ~~ E3 equivariant model build configuration keys ~~ #
 # see model_build default_config for type
