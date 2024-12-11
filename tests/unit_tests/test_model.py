@@ -53,6 +53,7 @@ def get_graphs(batched):
 def get_model_config():
     config = {
         'cutoff': cutoff,
+        'multi_cutoff': None,
         'channel': 4,
         'radial_basis': {
             'radial_basis_name': 'bessel',
@@ -152,7 +153,7 @@ def test_batch():
     assert torch.allclose(
         torch.round(f_concat, decimals=5),
         torch.round(output_batched['inferred_force'], decimals=5),
-        atol=1e-5
+        atol=1e-5,
     )
 
     assert torch.allclose(  # TODO, hard-coded, assumes the first structure is bulk
@@ -166,8 +167,7 @@ _n_param_tests = [
     ({'train_denominator': True}, 20642 + 3),
     ({'train_shift_scale': True}, 20642 + 2),
     ({'shift': [1.0] * 4}, 20642),
-    ({'scale': [1.0] * 4,
-      'train_shift_scale': True}, 20642 + 8),
+    ({'scale': [1.0] * 4, 'train_shift_scale': True}, 20642 + 8),
     ({'num_convolution_layer': 4}, 33458),
     ({'lmax': 3}, 26866),
     ({'channel': 2}, 16883),
