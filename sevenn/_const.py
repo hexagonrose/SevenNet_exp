@@ -48,8 +48,8 @@ ACTIVATION_FOR_ODD = {'tanh': torch.tanh, 'abs': torch.abs}
 ACTIVATION_DICT = {'e': ACTIVATION_FOR_EVEN, 'o': ACTIVATION_FOR_ODD}
 
 _prefix = os.path.abspath(f'{os.path.dirname(__file__)}/pretrained_potentials')
-SEVENNET_0_11July2024 = (
-    f'{_prefix}/SevenNet_0__11July2024/checkpoint_sevennet_0.pth'
+SEVENNET_0_11Jul2024 = (
+    f'{_prefix}/SevenNet_0__11Jul2024/checkpoint_sevennet_0.pth'
 )
 SEVENNET_0_22May2024 = (
     f'{_prefix}/SevenNet_0__22May2024/checkpoint_sevennet_0.pth'
@@ -63,7 +63,7 @@ SEVENNET_l3i5 = (
 AtomGraphDataType = Dict[str, torch.Tensor]
 
 
-class LossType(Enum):
+class LossType(Enum):  # only used for train_v1, do not use it afterwards
     ENERGY = 'energy'  # eV or eV/atom
     FORCE = 'force'  # eV/A
     STRESS = 'stress'  # kB
@@ -80,18 +80,19 @@ def error_record_condition(x):
         if v[0] == 'TotalLoss':
             continue
         if v[1] not in SUPPORTING_METRICS:
-            print('w')
             return False
     return True
 
 
 DEFAULT_E3_EQUIVARIANT_MODEL_CONFIG = {
-    KEY.IRREPS_MANUAL: False,
+    KEY.CUTOFF: 4.5,
     KEY.NODE_FEATURE_MULTIPLICITY: 32,
+    KEY.IRREPS_MANUAL: False,
     KEY.LMAX: 1,
     KEY.LMAX_EDGE: -1,  # -1 means lmax_edge = lmax
     KEY.LMAX_NODE: -1,  # -1 means lmax_node = lmax
     KEY.IS_PARITY: True,
+    KEY.NUM_CONVOLUTION: 3,
     KEY.RADIAL_BASIS: {
         KEY.RADIAL_BASIS_NAME: 'bessel',
     },
@@ -100,10 +101,12 @@ DEFAULT_E3_EQUIVARIANT_MODEL_CONFIG = {
     },
     KEY.ACTIVATION_RADIAL: 'silu',
     KEY.CUTOFF: 4.5,
+    KEY.MULTI_CUTOFF: None,
     KEY.CONVOLUTION_WEIGHT_NN_HIDDEN_NEURONS: [64, 64],
     KEY.NUM_CONVOLUTION: 3,
     KEY.ACTIVATION_SCARLAR: {'e': 'silu', 'o': 'tanh'},
     KEY.ACTIVATION_GATE: {'e': 'silu', 'o': 'tanh'},
+    KEY.CONVOLUTION_WEIGHT_NN_HIDDEN_NEURONS: [64, 64],
     # KEY.AVG_NUM_NEIGH: True,  # deprecated
     # KEY.TRAIN_AVG_NUM_NEIGH: False,  # deprecated
     KEY.CONV_DENOMINATOR: 'avg_num_neigh',
@@ -111,6 +114,10 @@ DEFAULT_E3_EQUIVARIANT_MODEL_CONFIG = {
     KEY.TRAIN_SHIFT_SCALE: False,
     # KEY.OPTIMIZE_BY_REDUCE: True,  # deprecated, always True
     KEY.USE_BIAS_IN_LINEAR: False,
+    KEY.USE_MODAL_NODE_EMBEDDING: False,
+    KEY.USE_MODAL_SELF_INTER_INTRO: False,
+    KEY.USE_MODAL_SELF_INTER_OUTRO: False,
+    KEY.USE_MODAL_OUTPUT_BLOCK: False,
     KEY.READOUT_AS_FCN: False,
     # Applied af readout as fcn is True
     KEY.READOUT_FCN_HIDDEN_NEURONS: [30, 30],
@@ -118,6 +125,7 @@ DEFAULT_E3_EQUIVARIANT_MODEL_CONFIG = {
     KEY.SELF_CONNECTION_TYPE: 'nequip',
     KEY.INTERACTION_TYPE: 'nequip',
     KEY._NORMALIZE_SPH: True,
+    KEY.CUEQUIVARIANCE_CONFIG: {},
 }
 
 
@@ -136,7 +144,9 @@ MODEL_CONFIG_CONDITION = {
     },
     KEY.CUTOFF: float,
     KEY.NUM_CONVOLUTION: int,
-    KEY.CONV_DENOMINATOR: lambda x: isinstance(x, float) or x in [
+    KEY.CONV_DENOMINATOR: lambda x: isinstance(x, float)
+    or x
+    in [
         'avg_num_neigh',
         'sqrt_avg_num_neigh',
     ],
@@ -144,6 +154,10 @@ MODEL_CONFIG_CONDITION = {
     KEY.TRAIN_SHIFT_SCALE: bool,
     KEY.TRAIN_DENOMINTAOR: bool,
     KEY.USE_BIAS_IN_LINEAR: bool,
+    KEY.USE_MODAL_NODE_EMBEDDING: bool,
+    KEY.USE_MODAL_SELF_INTER_INTRO: bool,
+    KEY.USE_MODAL_SELF_INTER_OUTRO: bool,
+    KEY.USE_MODAL_OUTPUT_BLOCK: bool,
     KEY.READOUT_AS_FCN: bool,
     KEY.READOUT_FCN_HIDDEN_NEURONS: list,
     KEY.READOUT_FCN_ACTIVATION: str,
@@ -151,6 +165,7 @@ MODEL_CONFIG_CONDITION = {
     KEY.SELF_CONNECTION_TYPE: lambda x: x in IMPLEMENTED_SELF_CONNECTION_TYPE,
     KEY.INTERACTION_TYPE: lambda x: x in IMPLEMENTED_INTERACTION_TYPE,
     KEY._NORMALIZE_SPH: bool,
+    KEY.CUEQUIVARIANCE_CONFIG: dict,
 }
 
 
@@ -173,14 +188,19 @@ DEFAULT_DATA_CONFIG = {
     KEY.SAVE_DATASET: False,
     KEY.SAVE_BY_LABEL: False,
     KEY.SAVE_BY_TRAIN_VALID: False,
-    KEY.RATIO: 0.0,
+    KEY.RATIO: 0.1,
     KEY.BATCH_SIZE: 6,
     KEY.PREPROCESS_NUM_CORES: 1,
     KEY.COMPUTE_STATISTICS: True,
     KEY.DATASET_TYPE: 'graph',
     # KEY.USE_SPECIES_WISE_SHIFT_SCALE: False,
+    KEY.USE_MODAL_WISE_SHIFT: False,
+    KEY.USE_MODAL_WISE_SCALE: False,
     KEY.SHIFT: 'per_atom_energy_mean',
     KEY.SCALE: 'force_rms',
+    # KEY.DATA_SHUFFLE: True,
+    # KEY.DATA_WEIGHT: False,
+    # KEY.DATA_MODALITY: False,
 }
 
 DATA_CONFIG_CONDITION = {
@@ -197,8 +217,12 @@ DATA_CONFIG_CONDITION = {
     # KEY.USE_SPECIES_WISE_SHIFT_SCALE: bool,
     KEY.SHIFT: lambda x: type(x) in [float, list] or x in IMPLEMENTED_SHIFT,
     KEY.SCALE: lambda x: type(x) in [float, list] or x in IMPLEMENTED_SCALE,
+    KEY.USE_MODAL_WISE_SHIFT: bool,
+    KEY.USE_MODAL_WISE_SCALE: bool,
+    # KEY.DATA_SHUFFLE: bool,
     KEY.COMPUTE_STATISTICS: bool,
-    KEY.SAVE_DATASET: str,
+    # KEY.DATA_WEIGHT: bool,
+    # KEY.DATA_MODALITY: bool,
 }
 
 
@@ -221,14 +245,16 @@ DEFAULT_TRAINING_CONFIG = {
     KEY.FORCE_WEIGHT: 0.1,
     KEY.STRESS_WEIGHT: 1e-6,  # SIMPLE-NN default
     KEY.PER_EPOCH: 5,
-    KEY.USE_TESTSET: False,
+    # KEY.USE_TESTSET: False,
     KEY.CONTINUE: {
         KEY.CHECKPOINT: False,
         KEY.RESET_OPTIMIZER: False,
         KEY.RESET_SCHEDULER: False,
         KEY.RESET_EPOCH: False,
         KEY.USE_STATISTIC_VALUES_OF_CHECKPOINT: True,
+        KEY.USE_STATISTIC_VALUES_FOR_CP_MODAL_ONLY: True,
     },
+    # KEY.DEFAULT_MODAL: 'common',
     KEY.CSV_LOG: 'log.csv',
     KEY.NUM_WORKERS: 0,
     KEY.IS_TRAIN_STRESS: True,
@@ -240,6 +266,8 @@ DEFAULT_TRAINING_CONFIG = {
         ['TotalLoss', 'None'],
     ],
     KEY.BEST_METRIC: 'TotalLoss',
+    KEY.USE_WEIGHT: False,
+    KEY.USE_MODALITY: False,
 }
 
 
@@ -257,12 +285,16 @@ TRAINING_CONFIG_CONDITION = {
         KEY.RESET_SCHEDULER: bool,
         KEY.RESET_EPOCH: bool,
         KEY.USE_STATISTIC_VALUES_OF_CHECKPOINT: bool,
+        KEY.USE_STATISTIC_VALUES_FOR_CP_MODAL_ONLY: bool,
     },
+    KEY.DEFAULT_MODAL: str,
     KEY.IS_TRAIN_STRESS: bool,
     KEY.TRAIN_SHUFFLE: bool,
     KEY.ERROR_RECORD: error_record_condition,
     KEY.BEST_METRIC: str,
     KEY.CSV_LOG: str,
+    KEY.USE_MODALITY: bool,
+    KEY.USE_WEIGHT: bool,
 }
 
 
