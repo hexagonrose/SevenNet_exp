@@ -1,5 +1,5 @@
 from copy import deepcopy
-from typing import Callable, List, Tuple
+from typing import Callable, List, Optional, Tuple
 
 from e3nn.o3 import Irreps
 
@@ -28,7 +28,7 @@ def NequIP_interaction_block(
     data_key_x: str = KEY.NODE_FEATURE,
     data_key_weight_input: str = KEY.EDGE_EMBEDDING,
     parallel: bool = False,
-    multi_cutoff_list: List[int] = None,
+    multi_cutoff_list: Optional[List[int]] = None,
     **conv_kwargs,
 ):
     block = {}

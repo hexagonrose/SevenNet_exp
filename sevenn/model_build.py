@@ -84,7 +84,7 @@ def init_edge_embedding(config):
     _normalize_sph = config[KEY._NORMALIZE_SPH]
     sph = SphericalEncoding(lmax_edge, parity, normalize=_normalize_sph)
 
-    if config[KEY.MULTI_CUTOFF]:
+    if config.get(KEY.MULTI_CUTOFF, False):
         print('Multi cutoff is used')
         multi_cutoff_list = list(set(config['multi_cutoff']))
         rbf_list = []
@@ -428,7 +428,7 @@ def build_E3_equivariant_model(
 
     edge_embedding = init_edge_embedding(config)
     irreps_filter = edge_embedding.spherical.irreps_out
-    if config[KEY.MULTI_CUTOFF]:
+    if config.get(KEY.MULTI_CUTOFF, False):
         radial_basis_num = edge_embedding.basis_functions[0].num_basis
     else:
         radial_basis_num = edge_embedding.basis_function.num_basis
@@ -471,7 +471,7 @@ def build_E3_equivariant_model(
         'bias_in_linear': use_bias_in_linear,
         'num_species': num_species,
         'parallel': parallel,
-        'multi_cutoff_list': config[KEY.MULTI_CUTOFF],
+        'multi_cutoff_list': config.get(KEY.MULTI_CUTOFF, None),
     }
     param_interaction_block.update(**config.get('conv_kwargs', {}))
 
