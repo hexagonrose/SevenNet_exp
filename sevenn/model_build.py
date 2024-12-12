@@ -13,6 +13,7 @@ from .nn.convolution import IrrepsConvolution
 from .nn.edge_embedding import (
     BesselBasis,
     EdgeEmbedding,
+    MultiCutoffEdgeEmbedding,
     PolynomialCutoff,
     SphericalEncoding,
     XPLORCutoff,
@@ -68,13 +69,6 @@ def init_self_connection(config):
 def init_edge_embedding(config):
     _cutoff_param = {'cutoff_length': config[KEY.CUTOFF]}
     rbf, env, sph = None, None, None
-
-    rbf_dct = copy.deepcopy(config[KEY.RADIAL_BASIS])
-    rbf_dct.update(_cutoff_param)
-    rbf_name = rbf_dct.pop(KEY.RADIAL_BASIS_NAME)
-    if rbf_name == 'bessel':
-        rbf = BesselBasis(**rbf_dct)
-
     envelop_dct = copy.deepcopy(config[KEY.CUTOFF_FUNCTION])
     envelop_dct.update(_cutoff_param)
     envelop_name = envelop_dct.pop(KEY.CUTOFF_FUNCTION_NAME)
@@ -90,7 +84,36 @@ def init_edge_embedding(config):
     _normalize_sph = config[KEY._NORMALIZE_SPH]
     sph = SphericalEncoding(lmax_edge, parity, normalize=_normalize_sph)
 
-    return EdgeEmbedding(basis_module=rbf, cutoff_module=env, spherical_module=sph)
+    if config[KEY.MULTI_CUTOFF]:
+        print('Multi cutoff is used')
+        multi_cutoff_list = list(set(config['multi_cutoff']))
+        rbf_list = []
+        for cutoff in multi_cutoff_list:
+            rbf_dct = copy.deepcopy(config[KEY.RADIAL_BASIS])
+            rbf_dct.update({'cutoff_length': cutoff})
+            rbf_name = rbf_dct.pop(KEY.RADIAL_BASIS_NAME)
+            if rbf_name == 'bessel':
+                rbf = BesselBasis(**rbf_dct)
+            rbf_list.append(rbf)
+
+        return MultiCutoffEdgeEmbedding(
+            basis_module=rbf_list,
+            cutoff_module=env,
+            spherical_module=sph,
+        )
+    else:
+        print('Normal cutoff is used')
+        rbf_dct = copy.deepcopy(config[KEY.RADIAL_BASIS])
+        rbf_dct.update(_cutoff_param)
+        rbf_name = rbf_dct.pop(KEY.RADIAL_BASIS_NAME)
+        if rbf_name == 'bessel':
+            rbf = BesselBasis(**rbf_dct)
+
+        return EdgeEmbedding(
+            basis_module=rbf,
+            cutoff_module=env,
+            spherical_module=sph,
+        )
 
 
 def init_feature_reduce(config, irreps_x):
@@ -405,7 +428,10 @@ def build_E3_equivariant_model(
 
     edge_embedding = init_edge_embedding(config)
     irreps_filter = edge_embedding.spherical.irreps_out
-    radial_basis_num = edge_embedding.basis_function.num_basis
+    if config[KEY.MULTI_CUTOFF]:
+        radial_basis_num = edge_embedding.basis_functions[0].num_basis
+    else:
+        radial_basis_num = edge_embedding.basis_function.num_basis
     layers.update({'edge_embedding': edge_embedding})
 
     one_hot_irreps = Irreps(f'{num_species}x0e')
@@ -445,6 +471,7 @@ def build_E3_equivariant_model(
         'bias_in_linear': use_bias_in_linear,
         'num_species': num_species,
         'parallel': parallel,
+        'multi_cutoff_list': config[KEY.MULTI_CUTOFF],
     }
 
     interaction_builder = None

@@ -168,6 +168,7 @@ NUM_SPECIES = '_number_of_species'
 NUM_MODALITIES = '_number_of_modalities'
 TYPE_MAP = '_type_map'
 MODAL_MAP = '_modal_map'
+MULTI_CUTOFF = 'multi_cutoff'
 
 # ~~ E3 equivariant model build configuration keys ~~ #
 # see model_build default_config for type
