@@ -126,6 +126,7 @@ DEFAULT_E3_EQUIVARIANT_MODEL_CONFIG = {
     KEY.INTERACTION_TYPE: 'nequip',
     KEY._NORMALIZE_SPH: True,
     KEY.CUEQUIVARIANCE_CONFIG: {},
+    'conv_kwargs': {},
 }
 
 

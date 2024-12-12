@@ -473,6 +473,7 @@ def build_E3_equivariant_model(
         'parallel': parallel,
         'multi_cutoff_list': config[KEY.MULTI_CUTOFF],
     }
+    param_interaction_block.update(**config.get('conv_kwargs', {}))
 
     interaction_builder = None
 
