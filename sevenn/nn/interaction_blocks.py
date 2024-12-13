@@ -78,6 +78,7 @@ def NequIP_interaction_block(
             **conv_kwargs,
         )
     else:
+        print(irreps_x, irreps_out)
         block[f'{t}_convolution'] = CGAfterGatherConvolution(
             irreps_x=irreps_x,
             irreps_filter=irreps_filter,

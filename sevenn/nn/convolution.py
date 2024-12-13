@@ -178,7 +178,6 @@ class CGAfterGatherConvolution(nn.Module):
                         irreps_mid.append((mul_x, ir_out))
                         instructions.append((i, j, k, ir_out.dim**0.5))
 
-        print(instructions)
         irreps_mid = Irreps(irreps_mid)
         irreps_mid, p, _ = irreps_mid.sort()  # type: ignore
         self.irreps_mid = irreps_mid
@@ -248,23 +247,23 @@ class CGAfterGatherConvolution(nn.Module):
         edge_src = data[self.key_edge_idx][1]
         edge_dst = data[self.key_edge_idx][0]
 
-        x_ex = x[edge_src] * weight[:, self.w_indi]  # [nedges, mul_ir]
-        kron = torch.einsum('zi,zj->zij', y, x_ex)  # [nedges, mul_ir, ir]
+        x_ex = x[edge_src] * weight[:, self.w_indi]  # [nedges, mul_irx]
+        kron = torch.einsum('zi,zj->zij', y, x_ex)  # [nedges, iry, mul_irx]
         xx = (
             message_gather(x, edge_dst, kron) / self.denominator
-        )  # [nnodes, mul_ir, ir]
+        )  # [nnodes, iry, mul_irx]
 
         out_dct = {}
         for irreps_1, slice in zip(self.irreps_x, self.irreps_x.slices()):
             xx_ = (
                 xx[:, :, slice]
                 .reshape(-1, irreps_y.dim, irreps_1.mul, irreps_1.ir.dim)
-                .transpose(1, 2)  # y_ir channel swap
-                .flatten(2, 3)  # y_ir x_ir flatten
+                .transpose(1, 2)  # [nnodes, mul, iry, irx]
+                .flatten(2, 3)  # [nnodes, mul, irxy]
             )
             coeff, l_list = self.w3j_dict[irreps_1.ir.l]
             coeff = coeff.to(x.device)
-            out = torch.einsum('zui,ik->zuk', xx_, coeff)  # nbatch, channel, ir_mul
+            out = torch.einsum('zui,ik->zuk', xx_, coeff)  # [nnodes, mul, irz]
             idx = 0
             for l1, l2, l3 in l_list:
                 dim = 2 * l3 + 1
@@ -278,7 +277,7 @@ class CGAfterGatherConvolution(nn.Module):
             l3 = irreps_mid[inst[2]].ir.l  # type: ignore
             outputs.append(out_dct[(l1, l2, l3)].flatten(1, 2) * inst[3])
 
-        x = torch.cat(outputs, dim=1)
+        x = torch.cat(outputs, dim=1)  # [nnodes, mul_irz]
 
         if self.is_parallel:
             x = torch.tensor_split(x, data[KEY.NLOCAL])[0]
