@@ -5,7 +5,7 @@ from e3nn.o3 import Irreps
 
 import sevenn._keys as KEY
 
-from .convolution import CGAfterGatherConvolution, IrrepsConvolution
+from .convolution import CGAfterGatherConvolution, IrrepsConvolution, FusedE3nnConv
 from .equivariant_gate import EquivariantGate
 from .linear import IrrepsLinear
 
@@ -62,7 +62,23 @@ def NequIP_interaction_block(
 
     conv_kwargs = deepcopy(conv_kwargs)
     use_cg_af_gat = conv_kwargs.pop('cg_af_gat', False)
-    if irreps_x.lmax == 0 or irreps_out.lmax == 0 or not use_cg_af_gat:
+    use_fused = conv_kwargs.pop('use_fused', False)
+    if use_fused:
+        block[f'{t}_convolution'] = FusedE3nnConv(
+            irreps_x=irreps_x,
+            irreps_filter=irreps_filter,
+            irreps_out=irreps_out_tp,
+            weight_layer_input_to_hidden=weight_nn_layers,
+            weight_layer_act=act_radial,
+            denominator=conv_denominator,
+            train_denominator=train_conv_denominator,
+            data_key_filter=data_key_filter,
+            data_key_weight_input=data_key_weight_input,
+            data_key_edge_idx=data_key_edge_idx,
+            is_parallel=parallel,
+            **conv_kwargs,
+        )
+    elif irreps_x.lmax == 0 or irreps_out.lmax == 0 or not use_cg_af_gat:
         block[f'{t}_convolution'] = IrrepsConvolution(
             irreps_x=irreps_x,
             irreps_filter=irreps_filter,
@@ -77,7 +93,7 @@ def NequIP_interaction_block(
             is_parallel=parallel,
             **conv_kwargs,
         )
-    else:
+    elif use_cg_af_gat:
         print(irreps_x, irreps_out)
         block[f'{t}_convolution'] = CGAfterGatherConvolution(
             irreps_x=irreps_x,

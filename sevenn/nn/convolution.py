@@ -220,7 +220,8 @@ class CGAfterGatherConvolution(nn.Module):
             indi.append(_indi)
             mul_prev += mul
         indi = list(chain(*indi))
-        self.w_indi = indi
+        #self.w_indi = indi
+        self.register_buffer('w_indi', torch.LongTensor(indi))
 
         self.weight_nn_kwargs = dict(
             hs=weight_layer_input_to_hidden + [w_numel], act=weight_layer_act
@@ -229,6 +230,7 @@ class CGAfterGatherConvolution(nn.Module):
         self.weight_nn = FullyConnectedNet(**self.weight_nn_kwargs)
 
         self._comm_size = irreps_x.dim  # used in parallel
+        print('index_select')
 
     def forward(self, data: AtomGraphDataType) -> AtomGraphDataType:
         weight = self.weight_nn(data[self.key_weight_input])
@@ -247,7 +249,8 @@ class CGAfterGatherConvolution(nn.Module):
         edge_src = data[self.key_edge_idx][1]
         edge_dst = data[self.key_edge_idx][0]
 
-        x_ex = x[edge_src] * weight[:, self.w_indi]  # [nedges, mul_irx]
+        #x_ex = x[edge_src] * weight[:, self.w_indi]  # [nedges, mul_irx]
+        x_ex = x[edge_src] * torch.index_select(weight, 1, self.w_indi)
         kron = torch.einsum('zi,zj->zij', y, x_ex)  # [nedges, iry, mul_irx]
         xx = (
             message_gather(x, edge_dst, kron) / self.denominator
@@ -283,3 +286,102 @@ class CGAfterGatherConvolution(nn.Module):
             x = torch.tensor_split(x, data[KEY.NLOCAL])[0]
         data[self.key_x] = x
         return data
+
+
+from sevenn.nn.fused_e3nn.fused_e3nn import fused_uvu_TP
+
+@compile_mode('script')
+class FusedE3nnConv(nn.Module):
+
+    def __init__(
+        self,
+        irreps_x: Irreps,
+        irreps_filter: Irreps,
+        irreps_out: Irreps,
+        weight_layer_input_to_hidden: List[int],
+        weight_layer_act=ShiftedSoftPlus,
+        denominator: float = 1.0,
+        train_denominator: bool = False,
+        data_key_x: str = KEY.NODE_FEATURE,
+        data_key_filter: str = KEY.EDGE_ATTR,
+        data_key_weight_input: str = KEY.EDGE_EMBEDDING,
+        data_key_edge_idx: str = KEY.EDGE_IDX,
+        is_parallel: bool = False,
+    ):
+        super().__init__()
+        self.denominator = nn.Parameter(
+            torch.FloatTensor([denominator]), requires_grad=train_denominator
+        )
+        self.key_x = data_key_x
+        self.key_filter = data_key_filter
+        self.key_weight_input = data_key_weight_input
+        self.key_edge_idx = data_key_edge_idx
+        self.is_parallel = is_parallel
+
+        instructions = []
+        irreps_mid = []
+        weight_numel = 0
+        for i, (mul_x, ir_x) in enumerate(irreps_x):
+            for j, (_, ir_filter) in enumerate(irreps_filter):
+                for ir_out in ir_x * ir_filter:
+                    if ir_out in irreps_out:  # here we drop l > lmax
+                        k = len(irreps_mid)
+                        weight_numel += mul_x * 1  # path shape
+                        irreps_mid.append((mul_x, ir_out))
+                        instructions.append((i, j, k, 'uvu', True))
+
+        irreps_mid = Irreps(irreps_mid)
+        irreps_mid, p, _ = irreps_mid.sort()  # type: ignore
+        instructions = [
+            (i_in1, i_in2, p[i_out], mode, train)
+            for i_in1, i_in2, i_out, mode, train in instructions
+        ]
+
+        # From v0.11.x, to compatible with cuEquivariance
+        self._instructions_before_sort = instructions
+        instructions = sorted(instructions, key=lambda x: x[2])
+
+        self.convolution_kwargs = dict(
+            i_in1=irreps_x,
+            i_in2=irreps_filter,
+            i_out=irreps_mid,
+            inst_tuple=instructions,
+            shared_weights=False,
+            internal_weights=False,
+        )
+
+        self.weight_nn_kwargs = dict(
+            hs=weight_layer_input_to_hidden + [weight_numel], act=weight_layer_act
+        )
+
+        self.convolution = fused_uvu_TP(
+            i_in1=irreps_x,
+            i_in2=irreps_filter,
+            i_out=irreps_mid,
+            inst_tuple=instructions,
+            shared_weights=False,
+            internal_weights=False,
+        )
+        self.weight_nn = FullyConnectedNet(**self.weight_nn_kwargs)
+        self._comm_size = irreps_x.dim  # used in parallel
+
+    def forward(self, data: AtomGraphDataType) -> AtomGraphDataType:
+        weight = self.weight_nn(data[self.key_weight_input])
+        x = data[self.key_x]
+        if self.is_parallel:
+            x = torch.cat([x, data[KEY.NODE_FEATURE_GHOST]])
+
+        # note that 1 -> src 0 -> dst
+        edge_src = data[self.key_edge_idx][1]
+        edge_dst = data[self.key_edge_idx][0]
+
+        message = self.convolution(x[edge_src], data[self.key_filter], weight)
+
+        x = message_gather(x, edge_dst, message)
+        x = x.div(self.denominator)
+        if self.is_parallel:
+            x = torch.tensor_split(x, data[KEY.NLOCAL])[0]
+        data[self.key_x] = x
+        return data
+
+
