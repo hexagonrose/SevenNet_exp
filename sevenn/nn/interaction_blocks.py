@@ -5,7 +5,11 @@ from e3nn.o3 import Irreps
 
 import sevenn._keys as KEY
 
-from .convolution import CGAfterGatherConvolution, IrrepsConvolution, FusedE3nnConv
+from .convolution import (
+    CGAfterGatherConvolution,
+    FusedE3nnConv,
+    IrrepsConvolution,
+)
 from .equivariant_gate import EquivariantGate
 from .linear import IrrepsLinear
 

@@ -290,6 +290,7 @@ class CGAfterGatherConvolution(nn.Module):
 
 from sevenn.nn.fused_e3nn.fused_e3nn import fused_uvu_TP
 
+
 @compile_mode('script')
 class FusedE3nnConv(nn.Module):
 
@@ -383,5 +384,3 @@ class FusedE3nnConv(nn.Module):
             x = torch.tensor_split(x, data[KEY.NLOCAL])[0]
         data[self.key_x] = x
         return data
-
-
