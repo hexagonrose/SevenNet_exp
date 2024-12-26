@@ -11,6 +11,7 @@ from sevenn._const import AtomGraphDataType
 
 
 @compile_mode('script')
+# @torch.compile
 class IrrepsLinear(nn.Module):
     """
     wrapper class of e3nn Linear to operate on AtomGraphData
@@ -101,6 +102,7 @@ class IrrepsLinear(nn.Module):
 
 
 @compile_mode('script')
+# @torch.compile
 class AtomReduce(nn.Module):
     """
     atomic energy -> total energy
@@ -127,6 +129,7 @@ class AtomReduce(nn.Module):
     def forward(self, data: AtomGraphDataType) -> AtomGraphDataType:
         if self._is_batch_data:
             src = data[self.key_input].squeeze(1)
+            # print(data[KEY.BATCH].max())
             size = int(data[KEY.BATCH].max()) + 1
             output = torch.zeros(
                 (size),
@@ -142,6 +145,7 @@ class AtomReduce(nn.Module):
 
 
 @compile_mode('script')
+# @torch.compile
 class FCN_e3nn(nn.Module):
     """
     wrapper class of e3nn FullyConnectedNet

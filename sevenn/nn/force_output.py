@@ -137,6 +137,7 @@ class ForceStressOutput(nn.Module):
 
 
 @compile_mode('script')
+# @torch.compile
 class ForceStressOutputFromEdge(nn.Module):
     """
     Compute stress and force from edge.

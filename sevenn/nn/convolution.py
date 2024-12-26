@@ -288,7 +288,7 @@ class CGAfterGatherConvolution(nn.Module):
         return data
 
 
-from sevenn.nn.fused_e3nn.fused_e3nn import fused_uvu_TP
+from sevenn.nn.fused_e3nn_kernel.fused_e3nn import fused_uvu_TP
 
 
 @compile_mode('script')

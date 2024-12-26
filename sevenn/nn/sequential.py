@@ -19,6 +19,7 @@ def _instantiate_modules(modules):
 
 
 @compile_mode('script')
+# @torch.compile
 class _ModalInputPrepare(nn.Module):
 
     def __init__(
@@ -38,6 +39,7 @@ class _ModalInputPrepare(nn.Module):
 
 
 @compile_mode('script')
+# @torch.compile
 class AtomGraphSequential(nn.Sequential):
     """
     Wrapper of SevenNet model
@@ -177,6 +179,8 @@ class AtomGraphSequential(nn.Sequential):
 
     def forward(self, input: AtomGraphDataType) -> AtomGraphDataType:
         data = self._preprocess(input)
+        torch.cuda.nvtx.range_push("seq_fwd")
         for module in self:
             data = module(data)
+        torch.cuda.nvtx.range_pop()
         return data

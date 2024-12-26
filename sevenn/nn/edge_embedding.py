@@ -10,6 +10,7 @@ from sevenn._const import AtomGraphDataType
 
 
 @compile_mode('script')
+# @torch.compile
 class EdgePreprocess(nn.Module):
     """
     preprocessing pos to edge vectors and edge lengths
@@ -78,6 +79,7 @@ class EdgePreprocess(nn.Module):
         return data
 
 
+# @torch.compile
 class BesselBasis(nn.Module):
     """
     f : (*, 1) -> (*, bessel_basis_num)
@@ -103,7 +105,7 @@ class BesselBasis(nn.Module):
         ur = r.unsqueeze(-1)  # to fit dimension
         return self.prefactor * torch.sin(self.coeffs * ur) / ur
 
-
+# @torch.compile
 class PolynomialCutoff(nn.Module):
     """
     f : (*, 1) -> (*, 1)
@@ -133,6 +135,7 @@ class PolynomialCutoff(nn.Module):
         )
 
 
+# @torch.compile
 class XPLORCutoff(nn.Module):
     """
     https://hoomd-blue.readthedocs.io/en/latest/module-md-pair.html
