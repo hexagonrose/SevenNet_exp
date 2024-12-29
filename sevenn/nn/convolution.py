@@ -343,10 +343,10 @@ class FusedE3nnConv(nn.Module):
         instructions = sorted(instructions, key=lambda x: x[2])
 
         self.convolution_kwargs = dict(
-            i_in1=irreps_x,
-            i_in2=irreps_filter,
-            i_out=irreps_mid,
-            inst_tuple=instructions,
+            irreps_in1=irreps_x,
+            irreps_in2=irreps_filter,
+            irreps_out=irreps_mid,
+            instructions=instructions,
             shared_weights=False,
             internal_weights=False,
         )

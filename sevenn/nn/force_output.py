@@ -166,7 +166,8 @@ class ForceStressOutputFromEdge(nn.Module):
         return self.key_edge
 
     def forward(self, data: AtomGraphDataType) -> AtomGraphDataType:
-        tot_num = torch.sum(data[KEY.NUM_ATOMS])  # ? item?
+        #tot_num = torch.sum(data[KEY.NUM_ATOMS])  # ? item?
+        tot_num = data['num_nodes']  # ? item?
         rij = data[self.key_edge]
         energy = [(data[self.key_energy]).sum()]
         edge_idx = data[self.key_edge_idx]
@@ -210,7 +211,8 @@ class ForceStressOutputFromEdge(nn.Module):
 
             if self._is_batch_data:
                 batch = data[KEY.BATCH]  # for deploy, must be defined first
-                nbatch = int(batch.max().cpu().item()) + 1
+                #nbatch = int(batch.max().cpu().item()) + 1
+                nbatch = data[KEY.BATCH].max().to(torch.int64) + 1
                 sout = torch.zeros(
                     (nbatch, 6), dtype=_virial.dtype, device=_virial.device
                 )

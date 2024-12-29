@@ -67,7 +67,8 @@ def NequIP_interaction_block(
     conv_kwargs = deepcopy(conv_kwargs)
     use_cg_af_gat = conv_kwargs.pop('cg_af_gat', False)
     use_fused = conv_kwargs.pop('use_fused', False)
-    if use_fused:
+    import os
+    if use_fused or os.getenv('FUSED', False):
         block[f'{t}_convolution'] = FusedE3nnConv(
             irreps_x=irreps_x,
             irreps_filter=irreps_filter,
@@ -98,7 +99,6 @@ def NequIP_interaction_block(
             **conv_kwargs,
         )
     elif use_cg_af_gat:
-        print(irreps_x, irreps_out)
         block[f'{t}_convolution'] = CGAfterGatherConvolution(
             irreps_x=irreps_x,
             irreps_filter=irreps_filter,
