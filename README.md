@@ -35,38 +35,32 @@ While **l3i5** offers improved accuracy across various systems compared to **Sev
 
 * Training set MAE: 8.3 meV/atom (energy), 0.029 eV/Ang. (force), and 2.33 kbar (stress)
 * Matbench F1 score: 0.76, $\kappa_{\mathrm{SRME}}$: 0.560
-* Training speed: 28m 38s / epoch (with 32 A100 GPU cards)
-
+* Training time: 381 GPU-days on A100
 ---
 
 ### **SevenNet-0 (11Jul2024)**
 > Keywords in ASE: `7net-0`, `SevenNet-0`, `7net-0_11Jul2024`, and `SevenNet-0_11Jul2024`
 
-Compared to **SevenNet-0 (22May2024)**, the training is changed from [MPF.2021.2.8](https://figshare.com/articles/dataset/MPF_2021_2_8/19470599) to [MPtrj](https://figshare.com/articles/dataset/Materials_Project_Trjectory_MPtrj_Dataset/23713842).
+The model architecture is mainly line with [GNoME](https://github.com/google-deepmind/materials_discovery), a pretrained model that utilizes the NequIP architecture.
+Five interaction blocks with node features that consist of 128 scalars (*l*=0), 64 vectors (*l*=1), and 32 tensors (*l*=2).
+The convolutional filter employs a cutoff radius of 5 Angstrom and a tensor product of learnable radial functions from bases of 8 radial Bessel functions and $l_{\mathrm{max}}$ of 2, resulting in the number of parameters is 0.84 M.
+The model was trained with [MPtrj](https://figshare.com/articles/dataset/Materials_Project_Trjectory_MPtrj_Dataset/23713842).
 This model is loaded as the default pre-trained model in ASE calculator.
 For more information, click [here](sevenn/pretrained_potentials/SevenNet_0__11Jul2024).
 
 * Training set MAE: 11.5 meV/atom (energy), 0.041 eV/Ang. (force), and 2.78 kbar (stress)
 * Matbench F1 score: 0.67, $\kappa_{\mathrm{SRME}}$: 0.767
-* Training speed: 6m 41s / epoch (with 32 A100 GPU cards)
-
+* Training time: 90 GPU-days on A100
 ---
 
-### **SevenNet-0 (22May2024)**
-> Keywords in ASE: `7net-0_22May2024` and `SevenNet-0_22May2024`
-
-The model architecture is mainly line with [GNoME](https://github.com/google-deepmind/materials_discovery), a pretrained model that utilizes the NequIP architecture.
-Five interaction blocks with node features that consist of 128 scalars (*l*=0), 64 vectors (*l*=1), and 32 tensors (*l*=2).
-The convolutional filter employs a cutoff radius of 5 Angstrom and a tensor product of learnable radial functions from bases of 8 radial Bessel functions and $l_{\mathrm{max}}$ of 2, resulting in the number of parameters is 0.84 M.
-The model was trained with [MPF.2021.2.8](https://figshare.com/articles/dataset/MPF_2021_2_8/19470599) up to 600 epochs. For more information, please read the [paper](https://pubs.acs.org/doi/10.1021/acs.jctc.4c00190) and visit [here](sevenn/pretrained_potentials/SevenNet_0__22May2024).
-
-* Training set MAE: 16.3 meV/atom (energy), 0.037 eV/Ang. (force), and 2.96 kbar (stress)
+In addition to these latest models, you can find our legacy models from [pretrained_potentials](./sevenn/pretrained_potentials).
 
 ## Contents
 - [Installation](#installation)
 - [Usage](#usage)
   - [ASE calculator](#ase-calculator)
   - [Training & inference](#training-and-inference)
+  - [Notebook tutorials](#notebook-tutorial)
   - [MD simulation with LAMMPS](#md-simulation-with-lammps)
     - [Installation](#installation)
     - [Single-GPU MD](#single-gpu-md)
@@ -189,6 +183,22 @@ sevenn_get_model {checkpoint path} -p
 
 This will create a directory with multiple `deployed_parallel_*.pt` files. The directory path itself is an argument for the lammps script. Please do not modify or remove files under the directory.
 These models can be used as lammps potential to run parallel MD simulations with GNN potential using multiple GPU cards.
+
+### Notebook tutorials<a name="notebook-tutorial"></a>
+
+If you want to learn how to use the `sevenn` python library instead of the CLI command, please check out the notebook tutorials below.
+
+| Notebooks | Google&nbsp;Colab | Descriptions |
+|-----------|-------------------|--------------|
+|[From scratch](https://github.com/MDIL-SNU/sevennet_tutorial/blob/main/notebooks/SevenNet_python_tutorial.ipynb)|[![Open in Google Colab]](https://colab.research.google.com/github/MDIL-SNU/sevennet_tutorial/blob/main/notebooks/SevenNet_python_tutorial.ipynb)|We can learn how to train the SevenNet from scratch, predict energy, forces, and stress using the trained model, perform structure relaxation, and draw EOS curves.|
+|[Fine-tuning](https://github.com/MDIL-SNU/sevennet_tutorial/blob/main/notebooks/SevenNet_finetune_tutorial.ipynb)|[![Open in Google Colab]](https://colab.research.google.com/github/MDIL-SNU/sevennet_tutorial/blob/main/notebooks/SevenNet_finetune_tutorial.ipynb)|We can learn how to fine-tune the SevenNet and compare the results of the pretrained model with the fine-tuned model.|
+
+[Open in Google Colab]: https://colab.research.google.com/assets/colab-badge.svg
+
+Sometimes, the Colab environment may crash due to memory issues. If you have good GPU resources in your local environment, it is recommended to download the tutorial from GitHub and run it locally.
+```bash
+git clone https://github.com/MDIL-SNU/sevennet_tutorial.git
+```
 
 ### MD simulation with LAMMPS
 
