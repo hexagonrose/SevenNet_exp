@@ -67,7 +67,7 @@ def get_model_config():
         'act_radial': 'silu',
         'act_scalar': {'e': 'silu', 'o': 'tanh'},
         'act_gate': {'e': 'silu', 'o': 'tanh'},
-        'conv_denominator': 1.0,
+        'conv_denominator': 30.0,
         'train_denominator': False,
         'self_connection_type': 'nequip',
         'shift': -10.0,
@@ -179,6 +179,34 @@ _n_param_tests = [
 @pytest.mark.parametrize('cf,ref', _n_param_tests)
 def test_num_params(cf, ref):
     model = get_model(cf)
+    param = sum([p.numel() for p in model.parameters() if p.requires_grad])
+    assert param == ref, f'ref: {ref} != given: {param}'
+
+
+_n_modal_param_tests = [
+    ({}, 20642),
+    ({'use_modal_node_embedding': True}, 20642 + 8),
+    ({'use_modal_self_inter_intro': True}, 20642 + 2 * 4 * 3),
+    ({'use_modal_self_inter_outro': True}, 20642 + 2 * (12 + 20 + 4)),
+    ({'use_modal_output_block': True}, 20642 + 2 * 4 / 2),
+]
+
+
+@pytest.mark.parametrize('cf,ref', _n_modal_param_tests)
+def test_modal_num_params(cf, ref):
+    modal_cfg = {
+        'use_modality': True,
+        '_number_of_modalities': 2,
+        '_modal_map': {'x1': 0, 'x2': 1},
+        'use_modal_node_embedding': False,
+        'use_modal_self_inter_intro': False,
+        'use_modal_self_inter_outro': False,
+        'use_modal_output_block': False,
+        'use_modal_wise_shift': False,
+        'use_modal_wise_scale': False,
+    }
+    modal_cfg.update(cf)
+    model = get_model(modal_cfg)
     param = sum([p.numel() for p in model.parameters() if p.requires_grad])
     assert param == ref, f'ref: {ref} != given: {param}'
 

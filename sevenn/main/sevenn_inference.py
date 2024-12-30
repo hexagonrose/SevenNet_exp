@@ -3,11 +3,7 @@ import glob
 import os
 import sys
 
-import torch
-
 from sevenn import __version__
-from sevenn.scripts.inference import inference
-from sevenn.util import pretrained_name_to_path
 
 description = (
     f'sevenn version={__version__}, sevenn_inference. '
@@ -18,8 +14,12 @@ checkpoint_help = 'Checkpoint or pre-trained model name (7net-0)'
 target_help = 'Target files to evaluate'
 
 
-def main(args=None):
-    args = cmd_parse_data(args)
+def run(args):
+    import torch
+
+    from sevenn.scripts.inference import inference
+    from sevenn.util import pretrained_name_to_path
+
     out = args.output
 
     if os.path.exists(out):
@@ -47,6 +47,9 @@ def main(args=None):
             k, v = kwarg.split('=')
             fmt_kwargs[k] = v
 
+    if args.save_graph and args.allow_unlabeled:
+        raise ValueError('save_graph and allow_unlabeled are mutually exclusive')
+
     inference(
         cp,
         targets,
@@ -55,11 +58,13 @@ def main(args=None):
         device,
         args.batch,
         args.save_graph,
+        args.allow_unlabeled,
+        args.modal,
         **fmt_kwargs,
     )
 
 
-def cmd_parse_data(args=None):
+def main():
     ag = argparse.ArgumentParser(description=description)
     ag.add_argument('checkpoint', type=str, help=checkpoint_help)
     ag.add_argument('targets', type=str, nargs='+', help=target_help)
@@ -98,11 +103,23 @@ def cmd_parse_data(args=None):
         help='Additionally, save preprocessed graph as sevenn_data'
     )
     ag.add_argument(
+        '-au',
+        '--allow_unlabeled',
+        action='store_true',
+        help='Allow energy or force unlabeled data'
+    )
+    ag.add_argument(
+        '-m',
+        '--modal',
+        type=str,
+        default=None,
+        help='modality for multi-modal inference',
+    )
+    ag.add_argument(
         '--kwargs',
         nargs=argparse.REMAINDER,
         help='will be passed to reader, or can be used to specify EFS key',
     )
 
     args = ag.parse_args()
-
-    return args
+    run(args)
