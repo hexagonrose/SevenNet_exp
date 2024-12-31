@@ -11,7 +11,8 @@ from sevenn._const import AtomGraphDataType
 
 
 # TODO: put this to model_build and do not preprocess data by onehot
-@compile_mode('script')
+# @compile_mode('script')
+@torch.compile
 class OnehotEmbedding(nn.Module):
     """
     x : tensor of shape (N, 1)

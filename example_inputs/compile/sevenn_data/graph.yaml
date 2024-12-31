@@ -1,0 +1,173 @@
+avg_num_neigh: 28.0
+cutoff: 5.0
+files:
+- /home/parkyutack/projects/sevenn/example_inputs/compile/tmp.extxyz
+- /home/parkyutack/projects/sevenn/example_inputs/compile/tmp.extxyz
+force_rms: 0.5723667042976294
+num_graphs: 2
+per_atom_energy_mean: 0.0009765625
+per_atom_energy_std: 0.0
+sevennet_version: 0.11.0
+species:
+- Si
+sqrt_avg_num_neigh: 5.291502622129181
+statistics:
+  elemwise_reference_energies:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0009765624417923391
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  force_of_atoms:
+    count: 6144
+    max: 0.9999859929084778
+    mean: 0.4919242560863495
+    median: 0.48930174112319946
+    min: 4.940000053466065e-06
+    std: 0.29259899258613586
+  natoms:
+    Si: 2048
+    total: 2048
+  num_neighbor:
+    count: 2048
+    max: 28.0
+    mean: 28.0
+    median: 28.0
+    min: 28.0
+    std: 0.0
+  per_atom_energy:
+    count: 2
+    max: 0.0009765625
+    mean: 0.0009765625
+    median: 0.0009765625
+    min: 0.0009765625
+    std: 0.0
+  stress:
+    count: 12
+    max: .nan
+    mean: .nan
+    median: .nan
+    min: .nan
+    std: .nan
+  total_energy:
+    count: 2
+    max: 1.0
+    mean: 1.0
+    median: 1.0
+    min: 1.0
+    std: 0.0
+when: 2024-12-29 14:41

@@ -157,17 +157,24 @@ class Trainer:
             if is_train:
                 self.optimizer.zero_grad()
             batch = batch.to(self.device, non_blocking=True)
+            torch.cuda.nvtx.range_push("fwd")
             output = self.model(batch)
+            torch.cuda.nvtx.range_pop()
             if error_recorder is not None:
                 error_recorder.update(output)
             if is_train:
                 total_loss = torch.tensor([0.0], device=self.device)
+                torch.cuda.nvtx.range_push("loss")
                 for loss_def, w in self.loss_functions:
                     indv_loss = loss_def.get_loss(output, self.model)
                     if indv_loss is not None:
                         total_loss += (indv_loss * w)
+                torch.cuda.nvtx.range_pop()
+                torch.cuda.nvtx.range_push("bwd")
                 total_loss.backward()
+                torch.cuda.nvtx.range_pop()
                 self.optimizer.step()
+
 
         if self.distributed and error_recorder is not None:
             self.recorder_all_reduce(error_recorder)

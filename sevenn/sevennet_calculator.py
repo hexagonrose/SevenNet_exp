@@ -1,7 +1,6 @@
-import os
 import pathlib
 import warnings
-from typing import Any, Optional, Union
+from typing import Any, Optional, Union, Dict
 
 import numpy as np
 import torch
@@ -19,6 +18,7 @@ from sevenn.train.dataload import unlabeled_atoms_to_graph
 torch_script_type = torch.jit._script.RecursiveScriptModule
 
 
+# TODO: refactor. May use inheritance?
 class SevenNetCalculator(Calculator):
     """ASE calculator for SevenNet models
 
@@ -39,6 +39,8 @@ class SevenNetCalculator(Calculator):
         file_type: str = 'checkpoint',
         device: Union[torch.device, str] = 'auto',
         modal: Optional[str] = None,
+        compile: bool = False,
+        compile_kwargs: Optional[Dict[str, Any]] = None,
         enable_cueq: bool = False,
         sevennet_config: Optional[Any] = None,  # hold meta information
         **kwargs,
@@ -60,6 +62,9 @@ class SevenNetCalculator(Calculator):
         if file_type not in allowed_file_types:
             raise ValueError('file_type not in {allowed_file_types}')
 
+        if compile and not file_type == 'checkpoint':
+            raise ValueError('currently, only checkpoint can be compiled')
+
         if enable_cueq and file_type in ['model_instance', 'torchscript']:
             warnings.warn(
                 'file_type should be checkpoint to enable cueq. cueq set to False'
@@ -80,7 +85,9 @@ class SevenNetCalculator(Calculator):
             cp = util.load_checkpoint(model)
 
             backend = 'e3nn' if not enable_cueq else 'cueq'
-            model_loaded = cp.build_model(backend)
+            model_loaded = cp.build_model(
+                backend=backend, compile=compile, compile_kwargs=compile_kwargs
+            )
             model_loaded.set_is_batch_data(False)
 
             self.type_map = cp.config[KEY.TYPE_MAP]
@@ -138,7 +145,9 @@ class SevenNetCalculator(Calculator):
                 raise ValueError(f'Unknown modal {modal} (not in {_modals})')
 
         self.model.to(self.device)
-        self.model.eval()
+
+        if not compile:
+            self.model.eval()
 
         self.modal = modal
 
@@ -199,4 +208,6 @@ class SevenNetCalculator(Calculator):
                 .cpu()
                 .numpy()[[0, 1, 2, 4, 5, 3]]  # as voigt notation
             ),
+            'num_edges': output[KEY.EDGE_IDX].shape[1],
         }
+

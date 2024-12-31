@@ -1,0 +1,3 @@
+[submodule "sevenn/nn/fused_e3nn_kernel"]
+	path = sevenn/nn/fused_e3nn_kernel
+	url = https://github.com/SNU-ARC/fused_e3nn_kernel.git

@@ -4,3 +4,7 @@ sevenn.egg-info
 *.swp
 dev.vim
 __pycache__/
+*.sevenn
+*.csv
+*.nsys-rep
+*.pth

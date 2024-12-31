@@ -73,7 +73,10 @@ def processing_epoch_v2(
         errors = {}
         for k, loader in loaders.items():
             rec = recorders[k]
+            torch.cuda.cudart().cudaProfilerStart()
             trainer.run_one_epoch(loader, k == train_loader_key, rec)
+            if(epoch == 10):
+                torch.cuda.cudart().cudaProfilerStop()
             csv_dct.update(rec.get_dct(prefix=k))
             errors[k] = rec.epoch_forward()
         log.write_full_table(list(errors.values()), list(errors))

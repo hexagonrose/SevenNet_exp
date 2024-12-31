@@ -127,9 +127,10 @@ class AtomReduce(nn.Module):
     def forward(self, data: AtomGraphDataType) -> AtomGraphDataType:
         if self._is_batch_data:
             src = data[self.key_input].squeeze(1)
-            size = int(data[KEY.BATCH].max()) + 1
+            # print(data[KEY.BATCH].max())
+            size = data[KEY.BATCH].max().to(torch.int64) + 1
             output = torch.zeros(
-                (size),
+                (size,),
                 dtype=src.dtype,
                 device=src.device,
             )

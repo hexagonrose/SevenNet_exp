@@ -7,6 +7,8 @@ from datetime import datetime
 from typing import Any, Dict, Optional, Union
 
 import pandas as pd
+from e3nn.util.jit import prepare
+import torch
 from torch import Tensor
 from torch import load as torch_load
 
@@ -279,7 +281,12 @@ class SevenNetCheckpoint:
 
         self._loaded = True
 
-    def build_model(self, backend: Optional[str] = None) -> AtomGraphSequential:
+    def build_model(
+        self,
+        backend: Optional[str] = None,
+        compile: bool = False,
+        compile_kwargs: Optional[Dict[str, Any]] = None,
+    ) -> AtomGraphSequential:
         from .model_build import build_E3_equivariant_model
 
         use_cue = not backend or backend.lower() in ['cue', 'cueq']
@@ -288,16 +295,20 @@ class SevenNetCheckpoint:
         except KeyError:
             cp_using_cue = False
 
+        build = build_E3_equivariant_model
+        if compile:
+            build = prepare(build, allow_autograd=True)
+
         if (not backend) or (use_cue == cp_using_cue):
             # backend not given, or checkpoint backend is same as requested
-            model = build_E3_equivariant_model(self.config)
+            model = build(self.config)
             state_dict = compat.patch_state_dict_if_old(
                 self.model_state_dict, self.config, model
             )
         else:
             cfg_new = self.config
             cfg_new[KEY.CUEQUIVARIANCE_CONFIG] = {'use': use_cue}
-            model = build_E3_equivariant_model(cfg_new)
+            model = build(cfg_new)
             stct_src = compat.patch_state_dict_if_old(
                 self.model_state_dict, self.config, model
             )
@@ -308,6 +319,16 @@ class SevenNetCheckpoint:
             warnings.warn(f'Some keys are not used: {not_used}', UserWarning)
 
         assert len(missing) == 0, f'Missing keys: {missing}'
+
+        if compile:
+            if compile_kwargs is None:
+                compile_kwargs = {}
+            mode = compile_kwargs.pop('mode', 'max-autotune')
+            fullgraph = compile_kwargs.pop('fullgraph', True)
+            model._forward = torch.compile(  # type: ignore
+                model._seq, mode=mode, fullgraph=fullgraph, **compile_kwargs
+            )
+
         return model
 
     def yaml_dict(self, mode: str) -> dict:

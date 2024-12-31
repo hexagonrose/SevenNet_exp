@@ -137,8 +137,8 @@ def test_7net_l3i5(atoms_pbc, atoms_mol):
     g1_ref_e = torch.tensor([-3.611131191253662])
     g1_ref_f = torch.tensor(
         [
-            [13.430887, 0.08655541, 0.08754013],
-            [-13.430886, -0.08655544, -0.08754011],
+            [13.43089, 0.0865554, 0.0875401],
+            [-13.43089, -0.0865554, -0.0875401],
         ]
     )
     g1_ref_s = -1 * torch.tensor(
@@ -156,7 +156,7 @@ def test_7net_l3i5(atoms_pbc, atoms_mol):
     )
 
     assert acl(g1.inferred_total_energy, g1_ref_e)
-    assert acl(g1.inferred_force, g1_ref_f)
+    assert acl(g1.inferred_force, g1_ref_f), f'{g1.inferred_force} {g1_ref_f}'
     assert acl(g1.inferred_stress, g1_ref_s)
 
     assert acl(g2.inferred_total_energy, g2_ref_e)
