@@ -238,8 +238,8 @@ class AtomGraphSequential(nn.Sequential):
     def forward(self, input: AtomGraphDataType) -> AtomGraphDataType:
         data = self._preprocess(input)
 
-        #torch.cuda.nvtx.range_push("seq_fwd")
+        torch.cuda.nvtx.range_push("seq_fwd")
         ret = self._forward(data)
-        #torch.cuda.nvtx.range_pop()
+        torch.cuda.nvtx.range_pop()
 
         return ret

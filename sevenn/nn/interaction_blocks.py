@@ -68,7 +68,7 @@ def NequIP_interaction_block(
     use_cg_af_gat = conv_kwargs.pop('cg_af_gat', False)
     use_fused = conv_kwargs.pop('use_fused', False)
     import os
-    if use_fused or os.getenv('FUSED', False):
+    if (use_fused or os.getenv('FUSED', False)) and not (irreps_x.lmax == 0 or irreps_out.lmax == 0):
         block[f'{t}_convolution'] = FusedE3nnConv(
             irreps_x=irreps_x,
             irreps_filter=irreps_filter,
